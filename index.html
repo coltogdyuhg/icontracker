@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Icon of the Seas — Position</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   :root{
     --blue:#0a4fa0;
@@ -19,7 +20,6 @@
 
   #app{ width:100vw; height:100vh; display:flex; flex-direction:column; }
 
-  /* ---- header: crest ---- */
   header{
     flex:none; background:var(--blue);
     display:flex; align-items:center; justify-content:center;
@@ -32,7 +32,6 @@
   }
   .crest svg{ width:26px; height:26px; }
 
-  /* ---- body: sidebar + map ---- */
   #body{ flex:1; display:flex; min-height:0; }
 
   aside{
@@ -50,14 +49,24 @@
   .ship-icon{ flex:1; display:flex; align-items:flex-end; justify-content:center; padding-bottom:8px; }
   .ship-icon svg{ width:70%; height:auto; opacity:.95; }
 
-  main{ flex:1; position:relative; background:#000; min-width:0; }
-  main iframe{ width:100%; height:100%; border:0; display:block; }
-  main .loading{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-family:Consolas,Menlo,monospace; color:#9db6dd; font-size:12px; letter-spacing:.05em;
-  }
+  main{ flex:1; position:relative; background:#0b2e52; min-width:0; }
+  #map{ width:100%; height:100%; background:#0b2e52; }
 
-  /* ---- footer: date/time ---- */
+  /* keep Leaflet chrome minimal + on-brand */
+  .leaflet-control-attribution{
+    background:rgba(8,61,128,.7) !important; color:#cfe0f7 !important; font-size:9px !important;
+  }
+  .leaflet-control-attribution a{ color:#cfe0f7 !important; }
+  .leaflet-bar a{ background:rgba(8,61,128,.85) !important; color:#fff !important; border-color:var(--box-line) !important; }
+  .leaflet-control-scale-line{
+    background:rgba(8,61,128,.6) !important; color:#fff !important; border-color:#fff !important;
+  }
+  .place-label{
+    color:#eaf2ff; font-size:12px; font-weight:600; text-shadow:0 1px 3px #000a;
+    white-space:nowrap;
+  }
+  .ship-marker{ display:flex; align-items:center; justify-content:center; }
+
   footer{
     flex:none; background:var(--blue-dark);
     padding:10px 14px;
@@ -91,15 +100,15 @@
     <aside>
       <div class="box">
         <div class="lbl">Position</div>
-        <div class="val" id="posVal">See map</div>
+        <div class="val" id="posVal">24°54.0' N<br>080°24.0' W</div>
       </div>
       <div class="box">
         <div class="lbl">Speed</div>
-        <div class="val" id="spdVal">See map</div>
+        <div class="val" id="spdVal">20.7 kn</div>
       </div>
       <div class="box">
         <div class="lbl">Course</div>
-        <div class="val" id="crsVal">See map</div>
+        <div class="val" id="crsVal">235°</div>
       </div>
       <div class="ship-icon">
         <svg viewBox="0 0 200 60" fill="#ffffff">
@@ -113,15 +122,7 @@
     </aside>
 
     <main id="mapMain">
-      <div class="loading" id="mapLoading">
-        LOADING POSITION DATA…<br><br>
-        <a href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:311001178" target="_blank" style="color:#9db6dd;">Open live tracker directly →</a>
-      </div>
-      <iframe id="mtFrame"
-        src="https://www.marinetraffic.com/en/ais/embed/zoom:7/centery:24.8/centerx:-80.6/maptype:1/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false/trackvessel:311001178"
-        scrolling="no" frameborder="0"
-        onload="document.getElementById('mapLoading').style.display='none'">
-      </iframe>
+      <div id="map"></div>
     </main>
   </div>
 
@@ -129,12 +130,65 @@
   <button id="fsBtn">⛶ Full Screen</button>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  setTimeout(()=>{
-    const l = document.getElementById('mapLoading');
-    if(l && l.style.display !== 'none') l.innerHTML = "MAP DIDN'T LOAD<br><br><a href='https://www.marinetraffic.com/en/ais/details/ships/mmsi:311001178' target='_blank' style='color:#9db6dd;'>Open live tracker directly →</a>";
-  }, 8000);
+  // ---- ship position (fixed for now — see chat re: live data) ----
+  const SHIP_LAT = 24.90, SHIP_LON = -80.40, SHIP_COURSE_DEG = 235;
 
+  const map = L.map('map', {
+    zoomControl:true,
+    attributionControl:true,
+    center:[24.4,-81.2],
+    zoom:6.4,
+    zoomSnap:0.1
+  });
+
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+    maxZoom:12
+  }).addTo(map);
+
+  L.control.scale({imperial:true, metric:true, position:'bottomleft'}).addTo(map);
+
+  const places = [
+    {name:'Tampa', lat:27.95, lon:-82.46},
+    {name:'Miami', lat:25.76, lon:-80.19},
+    {name:'Fort Lauderdale', lat:26.12, lon:-80.14},
+    {name:'Ciudad de La Habana', lat:23.13, lon:-82.38},
+    {name:'Camagüey', lat:21.38, lon:-77.92}
+  ];
+  places.forEach(p=>{
+    L.marker([p.lat,p.lon],{
+      icon:L.divIcon({className:'', html:'<div style="width:6px;height:6px;background:#fff;border:1px solid #0a4fa0;border-radius:1px;"></div>', iconSize:[6,6]}),
+      interactive:false
+    }).addTo(map);
+    L.marker([p.lat,p.lon],{
+      icon:L.divIcon({className:'', html:`<div class="place-label">${p.name}</div>`, iconSize:[120,16], iconAnchor:[-8,8]}),
+      interactive:false
+    }).addTo(map);
+  });
+
+  // ship icon: circle with heading line, rotated to course
+  const shipHtml = `
+    <svg width="34" height="34" viewBox="0 0 34 34" style="transform:rotate(${SHIP_COURSE_DEG}deg);">
+      <circle cx="17" cy="17" r="9" fill="none" stroke="#ffffff" stroke-width="2"/>
+      <line x1="17" y1="17" x2="17" y2="3" stroke="#ffffff" stroke-width="2"/>
+    </svg>`;
+  L.marker([SHIP_LAT, SHIP_LON], {
+    icon: L.divIcon({className:'ship-marker', html:shipHtml, iconSize:[34,34], iconAnchor:[17,17]})
+  }).addTo(map);
+
+  function fmtCoord(dec, isLat){
+    const dir = isLat ? (dec>=0?'N':'S') : (dec>=0?'E':'W');
+    const a = Math.abs(dec);
+    const deg = Math.floor(a);
+    const min = ((a-deg)*60).toFixed(2);
+    return `${String(deg).padStart(isLat?2:3,'0')}°${min}' ${dir}`;
+  }
+  document.getElementById('posVal').innerHTML = `${fmtCoord(SHIP_LAT,true)}<br>${fmtCoord(SHIP_LON,false)}`;
+  document.getElementById('crsVal').textContent = SHIP_COURSE_DEG + '°';
+
+  // ---- footer clock ----
   function tickFooter(){
     const now = new Date();
     const d = new Intl.DateTimeFormat('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'America/New_York'}).format(now);
@@ -143,12 +197,13 @@
   }
   tickFooter(); setInterval(tickFooter,15000);
 
-  const fsBtn = document.getElementById('fsBtn');
-  fsBtn.addEventListener('click', ()=>{
+  // ---- full screen ----
+  document.getElementById('fsBtn').addEventListener('click', ()=>{
     if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.().catch(()=>{}); }
     else{ document.exitFullscreen?.(); }
   });
 
+  // ---- keep screen awake ----
   let wakeLock = null;
   async function requestWakeLock(){
     try{ if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); } }catch(e){}
