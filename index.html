@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Icon of the Seas — Ship Tracker</title>
+<style>
+  :root{
+    --bg:#0a0d10;
+    --panel:#12171c;
+    --line:#2a3238;
+    --text:#e7ebee;
+    --dim:#8b969d;
+    --ok:#3fbf5f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    width:100%; height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial, Helvetica, "Segoe UI", sans-serif;
+    overflow:hidden;
+  }
+  #app{
+    width:100vw; height:100vh;
+    display:flex; flex-direction:column;
+  }
+
+  /* ---- header, like a real vessel-tracking app bar ---- */
+  header{
+    flex:none;
+    display:flex; align-items:center; gap:12px;
+    padding:14px 16px;
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+  }
+  header .ship-name{
+    font-size:clamp(16px,2.4vw,22px);
+    font-weight:700;
+    letter-spacing:.01em;
+  }
+  header .meta{
+    font-family:"Consolas","Menlo",monospace;
+    font-size:clamp(10px,1.4vw,12px);
+    color:var(--dim);
+  }
+  header .live{
+    margin-left:auto;
+    display:flex; align-items:center; gap:6px;
+    font-family:"Consolas","Menlo",monospace;
+    font-size:clamp(10px,1.4vw,12px);
+    color:var(--ok);
+    border:1px solid #1f4a2a;
+    background:#0e1a10;
+    padding:4px 10px;
+    border-radius:4px;
+  }
+  header .live .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--ok);
+    animation:blink 1.4s infinite;
+  }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+  /* ---- main map area ---- */
+  main{
+    flex:1;
+    position:relative;
+    background:#000;
+    min-height:0;
+  }
+  main iframe{
+    width:100%; height:100%; border:0; display:block;
+  }
+  main .loading{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"Consolas","Menlo",monospace;
+    color:var(--dim); font-size:13px;
+    letter-spacing:.05em;
+  }
+
+  /* ---- footer data strip, like a real AIS readout panel ---- */
+  footer{
+    flex:none;
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    background:var(--panel);
+    border-top:1px solid var(--line);
+  }
+  footer .cell{
+    padding:10px 16px;
+    border-right:1px solid var(--line);
+    border-top:1px solid var(--line);
+  }
+  footer .cell:nth-child(odd){ border-left:none; }
+  footer .cell:nth-child(-n+2){ border-top:none; }
+  footer .cell .lbl{
+    font-family:"Consolas","Menlo",monospace;
+    font-size:10px; color:var(--dim);
+    text-transform:uppercase; letter-spacing:.06em;
+  }
+  footer .cell .val{
+    font-family:"Consolas","Menlo",monospace;
+    font-size:clamp(13px,1.8vw,16px);
+    margin-top:3px;
+  }
+
+  /* ---- full screen button ---- */
+  #fsBtn{
+    position:absolute;
+    top:14px; right:14px;
+    z-index:9;
+    font-family:Arial, Helvetica, sans-serif;
+    font-size:13px;
+    color:var(--text);
+    background:#000000cc;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 14px;
+    cursor:pointer;
+  }
+  #fsBtn:hover{ border-color:var(--dim); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div>
+      <div class="ship-name">ICON OF THE SEAS</div>
+      <div class="meta">MMSI 311001178 &nbsp;·&nbsp; IMO 9829930 &nbsp;·&nbsp; Royal Caribbean International</div>
+    </div>
+    <div class="live"><span class="dot"></span> LIVE AIS</div>
+  </header>
+
+  <main id="mapMain">
+    <div class="loading" id="mapLoading">LOADING POSITION DATA…</div>
+    <div id="mt-embed"></div>
+  </main>
+
+  <footer>
+    <div class="cell"><div class="lbl">Class</div><div class="val">Icon Class</div></div>
+    <div class="cell"><div class="lbl">Home Port</div><div class="val">Miami, FL</div></div>
+    <div class="cell"><div class="lbl">Top Speed</div><div class="val">22 kn</div></div>
+    <div class="cell"><div class="lbl">Length</div><div class="val">1,198 ft</div></div>
+  </footer>
+
+  <button id="fsBtn">⛶ Full Screen</button>
+</div>
+
+<!-- MarineTraffic official free embed (no API key / no signup required) -->
+<script type="text/javascript">
+  width='100%'; height='100%'; border='0'; shownames='true';
+  latitude='19.5'; longitude='-81.5'; zoom='5'; maptype='1';
+  trackvessel='311001178'; fleet='';
+</script>
+<script type="text/javascript" src="//www.marinetraffic.com/js/embed.js"></script>
+
+<script>
+  // hide the loading label once the embed injects its iframe
+  const obs = new MutationObserver(()=>{
+    if(document.querySelector('#mt-embed iframe')){
+      const l = document.getElementById('mapLoading');
+      if(l) l.style.display = 'none';
+      obs.disconnect();
+    }
+  });
+  obs.observe(document.getElementById('mt-embed'), {childList:true, subtree:true});
+  // fail-safe: if nothing loads in 8s, tell the truth instead of spinning forever
+  setTimeout(()=>{
+    const l = document.getElementById('mapLoading');
+    if(l && l.style.display !== 'none'){
+      l.textContent = 'MAP DIDN\'T LOAD — CHECK YOUR CONNECTION';
+    }
+  }, 8000);
+
+  // ---- full screen ----
+  const fsBtn = document.getElementById('fsBtn');
+  fsBtn.addEventListener('click', ()=>{
+    if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen?.().catch(()=>{});
+    } else {
+      document.exitFullscreen?.();
+    }
+  });
+
+  // ---- keep the screen awake ----
+  let wakeLock = null;
+  async function requestWakeLock(){
+    try{
+      if('wakeLock' in navigator){
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    }catch(e){}
+  }
+  requestWakeLock();
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') requestWakeLock();
+  });
+</script>
+</body>
+</html>
