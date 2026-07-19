@@ -3,201 +3,158 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Icon of the Seas — Ship Tracker</title>
+<title>Icon of the Seas — Position</title>
 <style>
   :root{
-    --bg:#0a0d10;
-    --panel:#12171c;
-    --line:#2a3238;
-    --text:#e7ebee;
-    --dim:#8b969d;
-    --ok:#3fbf5f;
+    --blue:#0a4fa0;
+    --blue-dark:#083d80;
+    --box:rgba(255,255,255,.13);
+    --box-line:rgba(255,255,255,.28);
+    --text:#ffffff;
+    --dim:#bfd4ef;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  html,body{
-    width:100%; height:100%;
-    background:var(--bg);
-    color:var(--text);
-    font-family:Arial, Helvetica, "Segoe UI", sans-serif;
-    overflow:hidden;
-  }
-  #app{
-    width:100vw; height:100vh;
-    display:flex; flex-direction:column;
-  }
+  html,body{ width:100%; height:100%; background:var(--blue); color:var(--text);
+    font-family:Arial, Helvetica, sans-serif; overflow:hidden; }
 
-  /* ---- header, like a real vessel-tracking app bar ---- */
+  #app{ width:100vw; height:100vh; display:flex; flex-direction:column; }
+
+  /* ---- header: crest ---- */
   header{
-    flex:none;
-    display:flex; align-items:center; gap:12px;
-    padding:14px 16px;
-    background:var(--panel);
-    border-bottom:1px solid var(--line);
-  }
-  header .ship-name{
-    font-size:clamp(16px,2.4vw,22px);
-    font-weight:700;
-    letter-spacing:.01em;
-  }
-  header .meta{
-    font-family:"Consolas","Menlo",monospace;
-    font-size:clamp(10px,1.4vw,12px);
-    color:var(--dim);
-  }
-  header .live{
-    margin-left:auto;
-    display:flex; align-items:center; gap:6px;
-    font-family:"Consolas","Menlo",monospace;
-    font-size:clamp(10px,1.4vw,12px);
-    color:var(--ok);
-    border:1px solid #1f4a2a;
-    background:#0e1a10;
-    padding:4px 10px;
-    border-radius:4px;
-  }
-  header .live .dot{
-    width:7px; height:7px; border-radius:50%;
-    background:var(--ok);
-    animation:blink 1.4s infinite;
-  }
-  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
-
-  /* ---- main map area ---- */
-  main{
-    flex:1;
-    position:relative;
-    background:#000;
-    min-height:0;
-  }
-  main iframe{
-    width:100%; height:100%; border:0; display:block;
-  }
-  main .loading{
-    position:absolute; inset:0;
+    flex:none; background:var(--blue);
     display:flex; align-items:center; justify-content:center;
-    font-family:"Consolas","Menlo",monospace;
-    color:var(--dim); font-size:13px;
-    letter-spacing:.05em;
+    padding:14px 0 10px;
+  }
+  .crest{
+    width:46px; height:46px; border-radius:50%;
+    border:2px solid #ffffffcc;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .crest svg{ width:26px; height:26px; }
+
+  /* ---- body: sidebar + map ---- */
+  #body{ flex:1; display:flex; min-height:0; }
+
+  aside{
+    flex:none; width:26vw; max-width:150px; min-width:108px;
+    display:flex; flex-direction:column; gap:12px;
+    padding:6px 8px;
+  }
+  .box{
+    background:var(--box); border:1px solid var(--box-line);
+    border-radius:8px; padding:8px 10px;
+  }
+  .box .lbl{ font-size:11px; color:var(--dim); letter-spacing:.02em; }
+  .box .val{ font-size:clamp(13px,2.6vw,17px); font-weight:700; margin-top:3px; line-height:1.15; }
+
+  .ship-icon{ flex:1; display:flex; align-items:flex-end; justify-content:center; padding-bottom:8px; }
+  .ship-icon svg{ width:70%; height:auto; opacity:.95; }
+
+  main{ flex:1; position:relative; background:#000; min-width:0; }
+  main iframe{ width:100%; height:100%; border:0; display:block; }
+  main .loading{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:Consolas,Menlo,monospace; color:#9db6dd; font-size:12px; letter-spacing:.05em;
   }
 
-  /* ---- footer data strip, like a real AIS readout panel ---- */
+  /* ---- footer: date/time ---- */
   footer{
-    flex:none;
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    background:var(--panel);
-    border-top:1px solid var(--line);
-  }
-  footer .cell{
-    padding:10px 16px;
-    border-right:1px solid var(--line);
-    border-top:1px solid var(--line);
-  }
-  footer .cell:nth-child(odd){ border-left:none; }
-  footer .cell:nth-child(-n+2){ border-top:none; }
-  footer .cell .lbl{
-    font-family:"Consolas","Menlo",monospace;
-    font-size:10px; color:var(--dim);
-    text-transform:uppercase; letter-spacing:.06em;
-  }
-  footer .cell .val{
-    font-family:"Consolas","Menlo",monospace;
-    font-size:clamp(13px,1.8vw,16px);
-    margin-top:3px;
+    flex:none; background:var(--blue-dark);
+    padding:10px 14px;
+    font-size:clamp(12px,2.4vw,14px);
   }
 
-  /* ---- full screen button ---- */
   #fsBtn{
-    position:absolute;
-    top:14px; right:14px;
-    z-index:9;
-    font-family:Arial, Helvetica, sans-serif;
-    font-size:13px;
-    color:var(--text);
-    background:#000000cc;
-    border:1px solid var(--line);
-    border-radius:6px;
-    padding:8px 14px;
-    cursor:pointer;
+    position:absolute; top:12px; right:12px; z-index:9;
+    font-family:Arial, sans-serif; font-size:12px; color:#fff;
+    background:#00000066; border:1px solid var(--box-line);
+    border-radius:6px; padding:7px 12px; cursor:pointer;
   }
-  #fsBtn:hover{ border-color:var(--dim); }
 </style>
 </head>
 <body>
 <div id="app">
 
   <header>
-    <div>
-      <div class="ship-name">ICON OF THE SEAS</div>
-      <div class="meta">MMSI 311001178 &nbsp;·&nbsp; IMO 9829930 &nbsp;·&nbsp; Royal Caribbean International</div>
+    <div class="crest">
+      <!-- generic anchor mark: not the Royal Caribbean trademark, see chat -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round">
+        <circle cx="12" cy="6" r="2.2"/>
+        <line x1="12" y1="8.2" x2="12" y2="19"/>
+        <line x1="7" y1="11" x2="17" y2="11"/>
+        <path d="M6 15c0 3 2.5 5 6 5s6-2 6-5"/>
+      </svg>
     </div>
-    <div class="live"><span class="dot"></span> LIVE AIS</div>
   </header>
 
-  <main id="mapMain">
-    <div class="loading" id="mapLoading">LOADING POSITION DATA…</div>
-    <div id="mt-embed"></div>
-  </main>
+  <div id="body">
+    <aside>
+      <div class="box">
+        <div class="lbl">Position</div>
+        <div class="val" id="posVal">See map</div>
+      </div>
+      <div class="box">
+        <div class="lbl">Speed</div>
+        <div class="val" id="spdVal">See map</div>
+      </div>
+      <div class="box">
+        <div class="lbl">Course</div>
+        <div class="val" id="crsVal">See map</div>
+      </div>
+      <div class="ship-icon">
+        <svg viewBox="0 0 200 60" fill="#ffffff">
+          <path d="M10 40 Q10 30 20 30 L170 30 Q185 30 190 42 L188 46 Q100 52 12 46 Z"/>
+          <rect x="35" y="14" width="10" height="16"/>
+          <rect x="55" y="8" width="10" height="22"/>
+          <rect x="75" y="14" width="60" height="16"/>
+          <rect x="145" y="18" width="8" height="12"/>
+        </svg>
+      </div>
+    </aside>
 
-  <footer>
-    <div class="cell"><div class="lbl">Class</div><div class="val">Icon Class</div></div>
-    <div class="cell"><div class="lbl">Home Port</div><div class="val">Miami, FL</div></div>
-    <div class="cell"><div class="lbl">Top Speed</div><div class="val">22 kn</div></div>
-    <div class="cell"><div class="lbl">Length</div><div class="val">1,198 ft</div></div>
-  </footer>
+    <main id="mapMain">
+      <div class="loading" id="mapLoading">
+        LOADING POSITION DATA…<br><br>
+        <a href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:311001178" target="_blank" style="color:#9db6dd;">Open live tracker directly →</a>
+      </div>
+      <iframe id="mtFrame"
+        src="https://www.marinetraffic.com/en/ais/embed/zoom:7/centery:24.8/centerx:-80.6/maptype:1/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false/trackvessel:311001178"
+        scrolling="no" frameborder="0"
+        onload="document.getElementById('mapLoading').style.display='none'">
+      </iframe>
+    </main>
+  </div>
 
+  <footer id="footerTime">—</footer>
   <button id="fsBtn">⛶ Full Screen</button>
 </div>
 
-<!-- MarineTraffic official free embed (no API key / no signup required) -->
-<script type="text/javascript">
-  width='100%'; height='100%'; border='0'; shownames='true';
-  latitude='19.5'; longitude='-81.5'; zoom='5'; maptype='1';
-  trackvessel='311001178'; fleet='';
-</script>
-<script type="text/javascript" src="//www.marinetraffic.com/js/embed.js"></script>
-
 <script>
-  // hide the loading label once the embed injects its iframe
-  const obs = new MutationObserver(()=>{
-    if(document.querySelector('#mt-embed iframe')){
-      const l = document.getElementById('mapLoading');
-      if(l) l.style.display = 'none';
-      obs.disconnect();
-    }
-  });
-  obs.observe(document.getElementById('mt-embed'), {childList:true, subtree:true});
-  // fail-safe: if nothing loads in 8s, tell the truth instead of spinning forever
   setTimeout(()=>{
     const l = document.getElementById('mapLoading');
-    if(l && l.style.display !== 'none'){
-      l.textContent = 'MAP DIDN\'T LOAD — CHECK YOUR CONNECTION';
-    }
+    if(l && l.style.display !== 'none') l.innerHTML = "MAP DIDN'T LOAD<br><br><a href='https://www.marinetraffic.com/en/ais/details/ships/mmsi:311001178' target='_blank' style='color:#9db6dd;'>Open live tracker directly →</a>";
   }, 8000);
 
-  // ---- full screen ----
+  function tickFooter(){
+    const now = new Date();
+    const d = new Intl.DateTimeFormat('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'America/New_York'}).format(now);
+    const t = new Intl.DateTimeFormat('en-US',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/New_York'}).format(now);
+    document.getElementById('footerTime').textContent = `${d}, ${t} (UTC-04:00)`;
+  }
+  tickFooter(); setInterval(tickFooter,15000);
+
   const fsBtn = document.getElementById('fsBtn');
   fsBtn.addEventListener('click', ()=>{
-    if(!document.fullscreenElement){
-      document.documentElement.requestFullscreen?.().catch(()=>{});
-    } else {
-      document.exitFullscreen?.();
-    }
+    if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.().catch(()=>{}); }
+    else{ document.exitFullscreen?.(); }
   });
 
-  // ---- keep the screen awake ----
   let wakeLock = null;
   async function requestWakeLock(){
-    try{
-      if('wakeLock' in navigator){
-        wakeLock = await navigator.wakeLock.request('screen');
-      }
-    }catch(e){}
+    try{ if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); } }catch(e){}
   }
   requestWakeLock();
-  document.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState === 'visible') requestWakeLock();
-  });
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') requestWakeLock(); });
 </script>
 </body>
 </html>
