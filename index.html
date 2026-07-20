@@ -3,213 +3,393 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Icon of the Seas — Position</title>
+<title>Icon of the Seas — Live Tracker</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --blue:#0a4fa0;
-    --blue-dark:#083d80;
-    --box:rgba(255,255,255,.13);
-    --box-line:rgba(255,255,255,.28);
-    --text:#ffffff;
-    --dim:#bfd4ef;
+    --blue-deep: #0a3363;
+    --blue-mid: #0e4b8c;
+    --blue-panel: #ffffff;
+    --text-navy: #0a2a4d;
+    --text-navy-soft: #4c6a8c;
+    --accent: #14b8a6;
+    --divider: #d9e3ee;
   }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  html,body{ width:100%; height:100%; background:var(--blue); color:var(--text);
-    font-family:Arial, Helvetica, sans-serif; overflow:hidden; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html, body{
+    width:100%; height:100%; overflow:hidden;
+    background: var(--blue-deep);
+    font-family:'Inter', sans-serif;
+    -webkit-user-select:none; user-select:none;
+  }
 
-  #app{ width:100vw; height:100vh; display:flex; flex-direction:column; }
-
-  header{
-    flex:none; background:var(--blue);
+  /* ============ SPLASH ============ */
+  #splash{
+    position:fixed; inset:0; z-index:50;
     display:flex; align-items:center; justify-content:center;
-    padding:14px 0 10px;
+    background: radial-gradient(ellipse at 50% 30%, var(--blue-mid), var(--blue-deep));
   }
-  .crest{
-    width:46px; height:46px; border-radius:50%;
-    border:2px solid #ffffffcc;
+  .plate{
+    width:min(560px, 88vw);
+    padding: 44px 48px 38px;
+    text-align:center;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 16px;
+    backdrop-filter: blur(6px);
+  }
+  .plate .emblem{
+    width:54px; height:54px; margin:0 auto 18px;
+    border-radius:50%;
+    border: 2px solid #fff;
     display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:22px;
   }
-  .crest svg{ width:26px; height:26px; }
-
-  #body{ flex:1; display:flex; min-height:0; }
-
-  aside{
-    flex:none; width:26vw; max-width:150px; min-width:108px;
-    display:flex; flex-direction:column; gap:12px;
-    padding:6px 8px;
+  .plate h1{
+    font-size: clamp(24px, 3vw, 32px);
+    color:#fff; letter-spacing:.02em; font-weight:700;
   }
-  .box{
-    background:var(--box); border:1px solid var(--box-line);
-    border-radius:8px; padding:8px 10px;
+  .plate .sub{
+    margin-top:8px; font-family:'Space Mono', monospace; font-size:12px;
+    color:#bcd3ec; letter-spacing:.1em;
   }
-  .box .lbl{ font-size:11px; color:var(--dim); letter-spacing:.02em; }
-  .box .val{ font-size:clamp(13px,2.6vw,17px); font-weight:700; margin-top:3px; line-height:1.15; }
-
-  .ship-icon{ flex:1; display:flex; align-items:flex-end; justify-content:center; padding-bottom:8px; }
-  .ship-icon svg{ width:70%; height:auto; opacity:.95; }
-
-  main{ flex:1; position:relative; background:#0b2e52; min-width:0; }
-  #map{ width:100%; height:100%; background:#0b2e52; }
-
-  /* keep Leaflet chrome minimal + on-brand */
-  .leaflet-control-attribution{
-    background:rgba(8,61,128,.7) !important; color:#cfe0f7 !important; font-size:9px !important;
+  .plate p{
+    margin: 22px 0 26px; font-size:14px; line-height:1.6; color:#cfe0f2;
   }
-  .leaflet-control-attribution a{ color:#cfe0f7 !important; }
-  .leaflet-bar a{ background:rgba(8,61,128,.85) !important; color:#fff !important; border-color:var(--box-line) !important; }
-  .leaflet-control-scale-line{
-    background:rgba(8,61,128,.6) !important; color:#fff !important; border-color:#fff !important;
+  #startBtn{
+    font-family:'Inter'; font-weight:600; font-size:15px;
+    color: var(--blue-deep);
+    background: #fff;
+    border:none; border-radius: 999px;
+    padding: 15px 38px; cursor:pointer;
   }
-  .place-label{
-    color:#eaf2ff; font-size:12px; font-weight:600; text-shadow:0 1px 3px #000a;
-    white-space:nowrap;
+  #keyRow{
+    margin-top:18px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
   }
-  .ship-marker{ display:flex; align-items:center; justify-content:center; }
+  #keyInput{
+    font-family:'Space Mono', monospace; font-size:12px;
+    padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,.3);
+    background: rgba(255,255,255,.08); color:#fff; width:230px;
+  }
+  #keyInput::placeholder{ color:#9fb8d4; }
+  #saveKeyBtn{
+    font-family:'Inter'; font-size:12px; font-weight:600;
+    background: var(--accent); color:#04302b; border:none;
+    border-radius:8px; padding:10px 14px; cursor:pointer;
+  }
+  .keynote{ margin-top:10px; font-size:11px; color:#9fb8d4; }
+  .keynote a{ color:#8fd8cd; }
 
-  footer{
-    flex:none; background:var(--blue-dark);
-    padding:10px 14px;
-    font-size:clamp(12px,2.4vw,14px);
+  /* ============ MAIN STAGE ============ */
+  #stage{ position:fixed; inset:0; display:none; }
+  #stage.active{ display:block; }
+
+  #map{ position:absolute; inset:0; }
+
+  /* Left sidebar */
+  #sidebar{
+    position:absolute; top:0; left:0; bottom:0; z-index:20;
+    width: 190px;
+    background: linear-gradient(180deg, var(--blue-mid), var(--blue-deep));
+    padding: 18px 14px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .emblem-top{
+    width:44px; height:44px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.85);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; margin-bottom:6px;
+  }
+  .card{
+    background: var(--blue-panel);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.18);
+  }
+  .card .label{
+    font-size: 10px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; color: var(--text-navy-soft);
+    margin-bottom: 6px;
+  }
+  .card .value{
+    font-family:'Space Mono', monospace;
+    font-size: clamp(15px, 1.6vw, 18px);
+    font-weight:700;
+    color: var(--text-navy);
+    line-height:1.3;
+  }
+  .card .value.dim{ color:#9aa9ba; font-weight:400; font-size:13px; }
+
+  #shipIconWrap{
+    margin-top:auto;
+    display:flex; align-items:center; justify-content:center;
+    padding: 10px 0 4px;
+  }
+
+  /* Bottom bar */
+  #bottombar{
+    position:absolute; left:190px; right:0; bottom:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 22px;
+    background: rgba(10,42,77,.82);
+    backdrop-filter: blur(3px);
+    color:#e7f0fa;
+    font-family:'Inter';
+    font-size: 13px;
+    font-weight:500;
+  }
+  #bottombar .divider-v{
+    width:1px; height:16px; background: rgba(255,255,255,.25);
+  }
+  #bottombar .seg{ display:flex; align-items:center; gap:14px; }
+  #bottombar .destTag{
+    font-weight:700; letter-spacing:.02em;
   }
 
   #fsBtn{
-    position:absolute; top:12px; right:12px; z-index:9;
-    font-family:Arial, sans-serif; font-size:12px; color:#fff;
-    background:#00000066; border:1px solid var(--box-line);
-    border-radius:6px; padding:7px 12px; cursor:pointer;
+    position:absolute; top:14px; right:16px; z-index:21;
+    background: rgba(10,42,77,.7);
+    border: 1px solid rgba(255,255,255,.3);
+    color:#e7f0fa; font-family:'Space Mono', monospace; font-size:11px;
+    letter-spacing:.08em; padding:8px 14px; border-radius:999px; cursor:pointer;
+  }
+
+  #connDot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:#f0a63c; margin-right:6px;
+  }
+  #connDot.live{ background:#37d67a; box-shadow:0 0 6px 1px rgba(55,214,122,.7); }
+
+  .leaflet-control-attribution{ display:none; }
+
+  @media (max-width: 680px){
+    #sidebar{ width:140px; }
+    #bottombar{ left:140px; font-size:11px; padding:10px 14px; }
+    .card{ padding:9px 10px; }
   }
 </style>
 </head>
 <body>
-<div id="app">
 
-  <header>
-    <div class="crest">
-      <!-- generic anchor mark: not the Royal Caribbean trademark, see chat -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round">
-        <circle cx="12" cy="6" r="2.2"/>
-        <line x1="12" y1="8.2" x2="12" y2="19"/>
-        <line x1="7" y1="11" x2="17" y2="11"/>
-        <path d="M6 15c0 3 2.5 5 6 5s6-2 6-5"/>
-      </svg>
+  <!-- ============ SPLASH ============ -->
+  <div id="splash">
+    <div class="plate">
+      <div class="emblem">⚓</div>
+      <h1>ICON OF THE SEAS</h1>
+      <div class="sub">IMO 9829930 · MMSI 311001178 · LIVE AIS</div>
+      <p>Paste a free AISStream.io API key below for live position, speed and course. Then tap Start — this goes full screen and stays awake for casting to a TV.</p>
+      <div id="keyRow">
+        <input id="keyInput" type="text" placeholder="AISStream API key (optional)">
+        <button id="saveKeyBtn">Save</button>
+      </div>
+      <div class="keynote">Free, no credit card — get a key at <a href="https://aisstream.io" target="_blank">aisstream.io</a>. Without one, the map still loads with placeholder readouts.</div>
+      <div id="keyRow" style="margin-top:20px;">
+        <button id="startBtn">Start Tracking</button>
+      </div>
     </div>
-  </header>
-
-  <div id="body">
-    <aside>
-      <div class="box">
-        <div class="lbl">Position</div>
-        <div class="val" id="posVal">24°54.0' N<br>080°24.0' W</div>
-      </div>
-      <div class="box">
-        <div class="lbl">Speed</div>
-        <div class="val" id="spdVal">20.7 kn</div>
-      </div>
-      <div class="box">
-        <div class="lbl">Course</div>
-        <div class="val" id="crsVal">235°</div>
-      </div>
-      <div class="ship-icon">
-        <svg viewBox="0 0 200 60" fill="#ffffff">
-          <path d="M10 40 Q10 30 20 30 L170 30 Q185 30 190 42 L188 46 Q100 52 12 46 Z"/>
-          <rect x="35" y="14" width="10" height="16"/>
-          <rect x="55" y="8" width="10" height="22"/>
-          <rect x="75" y="14" width="60" height="16"/>
-          <rect x="145" y="18" width="8" height="12"/>
-        </svg>
-      </div>
-    </aside>
-
-    <main id="mapMain">
-      <div id="map"></div>
-    </main>
   </div>
 
-  <footer id="footerTime">—</footer>
-  <button id="fsBtn">⛶ Full Screen</button>
-</div>
+  <!-- ============ MAIN STAGE ============ -->
+  <div id="stage">
+    <div id="map"></div>
+
+    <div id="sidebar">
+      <div class="emblem-top">⚓</div>
+
+      <div class="card">
+        <div class="label">Position</div>
+        <div class="value" id="valPosition">24°47.30&#8242; N<br>076°07.90&#8242; W</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Speed</div>
+        <div class="value" id="valSpeed">— knots</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Course</div>
+        <div class="value" id="valCourse">—&deg;</div>
+      </div>
+
+      <div id="shipIconWrap">
+        <svg width="52" height="90" viewBox="0 0 52 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M26 2C31 14 34 26 34 40V70H18V40C18 26 21 14 26 2Z" fill="#ffffff" fill-opacity="0.95"/>
+          <path d="M14 70H38L34 84H18L14 70Z" fill="#ffffff" fill-opacity="0.95"/>
+          <rect x="21" y="18" width="10" height="6" rx="1" fill="#0a3363"/>
+          <rect x="21" y="28" width="10" height="6" rx="1" fill="#0a3363"/>
+          <rect x="21" y="38" width="10" height="6" rx="1" fill="#0a3363"/>
+        </svg>
+      </div>
+    </div>
+
+    <button id="fsBtn">⛶ FULL SCREEN</button>
+
+    <div id="bottombar">
+      <div class="seg">
+        <span id="connDot"></span>
+        <span id="dateTimeLabel">— — —</span>
+      </div>
+      <div class="divider-v"></div>
+      <div class="seg destTag" id="destLabel">Destination: —</div>
+    </div>
+  </div>
+
+  <video id="keepAwakeVideo" muted playsinline loop style="position:fixed; width:1px; height:1px; opacity:0; pointer-events:none;"></video>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // ---- ship position (fixed for now — see chat re: live data) ----
-  const SHIP_LAT = 24.90, SHIP_LON = -80.40, SHIP_COURSE_DEG = 235;
+  const MMSI = "311001178";
+  let map, marker;
+  const START = [25.5, -78.5]; // Bahamas/Caribbean default view
 
-  const map = L.map('map', {
-    zoomControl:true,
-    attributionControl:true,
-    center:[24.4,-81.2],
-    zoom:6.4,
-    zoomSnap:0.1
-  });
-
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics',
-    maxZoom:12
-  }).addTo(map);
-
-  L.control.scale({imperial:true, metric:true, position:'bottomleft'}).addTo(map);
-
-  const places = [
-    {name:'Tampa', lat:27.95, lon:-82.46},
-    {name:'Miami', lat:25.76, lon:-80.19},
-    {name:'Fort Lauderdale', lat:26.12, lon:-80.14},
-    {name:'Ciudad de La Habana', lat:23.13, lon:-82.38},
-    {name:'Camagüey', lat:21.38, lon:-77.92}
-  ];
-  places.forEach(p=>{
-    L.marker([p.lat,p.lon],{
-      icon:L.divIcon({className:'', html:'<div style="width:6px;height:6px;background:#fff;border:1px solid #0a4fa0;border-radius:1px;"></div>', iconSize:[6,6]}),
-      interactive:false
+  function initMap(){
+    map = L.map('map', { zoomControl:false, attributionControl:false }).setView(START, 6);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 18
     }).addTo(map);
-    L.marker([p.lat,p.lon],{
-      icon:L.divIcon({className:'', html:`<div class="place-label">${p.name}</div>`, iconSize:[120,16], iconAnchor:[-8,8]}),
-      interactive:false
-    }).addTo(map);
-  });
 
-  // ship icon: circle with heading line, rotated to course
-  const shipHtml = `
-    <svg width="34" height="34" viewBox="0 0 34 34" style="transform:rotate(${SHIP_COURSE_DEG}deg);">
-      <circle cx="17" cy="17" r="9" fill="none" stroke="#ffffff" stroke-width="2"/>
-      <line x1="17" y1="17" x2="17" y2="3" stroke="#ffffff" stroke-width="2"/>
-    </svg>`;
-  L.marker([SHIP_LAT, SHIP_LON], {
-    icon: L.divIcon({className:'ship-marker', html:shipHtml, iconSize:[34,34], iconAnchor:[17,17]})
-  }).addTo(map);
-
-  function fmtCoord(dec, isLat){
-    const dir = isLat ? (dec>=0?'N':'S') : (dec>=0?'E':'W');
-    const a = Math.abs(dec);
-    const deg = Math.floor(a);
-    const min = ((a-deg)*60).toFixed(2);
-    return `${String(deg).padStart(isLat?2:3,'0')}°${min}' ${dir}`;
+    const shipDivIcon = L.divIcon({
+      className: '',
+      html: `<div style="width:26px;height:26px;border-radius:50%;background:rgba(20,184,166,.25);
+              border:2px solid #14e0c9;display:flex;align-items:center;justify-content:center;
+              box-shadow:0 0 12px 3px rgba(20,224,201,.6);">
+              <div style="width:6px;height:6px;border-radius:50%;background:#fff;"></div>
+            </div>`,
+      iconSize:[26,26], iconAnchor:[13,13]
+    });
+    marker = L.marker(START, { icon: shipDivIcon }).addTo(map);
   }
-  document.getElementById('posVal').innerHTML = `${fmtCoord(SHIP_LAT,true)}<br>${fmtCoord(SHIP_LON,false)}`;
-  document.getElementById('crsVal').textContent = SHIP_COURSE_DEG + '°';
 
-  // ---- footer clock ----
-  function tickFooter(){
+  // ---------- Format helpers ----------
+  function toDMM(deg, isLat){
+    const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+    const abs = Math.abs(deg);
+    const whole = Math.floor(abs);
+    const minutes = (abs - whole) * 60;
+    return `${whole.toString().padStart(isLat?2:3,'0')}\u00b0${minutes.toFixed(2)}\u2032 ${dir}`;
+  }
+
+  function updateDateTime(){
     const now = new Date();
-    const d = new Intl.DateTimeFormat('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'America/New_York'}).format(now);
-    const t = new Intl.DateTimeFormat('en-US',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/New_York'}).format(now);
-    document.getElementById('footerTime').textContent = `${d}, ${t} (UTC-04:00)`;
+    const opts = { timeZone:'America/New_York', weekday:'long', day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false };
+    const str = new Intl.DateTimeFormat('en-US', opts).format(now);
+    document.getElementById('dateTimeLabel').textContent = str + ' (UTC-04:00)';
   }
-  tickFooter(); setInterval(tickFooter,15000);
+  setInterval(updateDateTime, 1000);
+  updateDateTime();
 
-  // ---- full screen ----
-  document.getElementById('fsBtn').addEventListener('click', ()=>{
-    if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.().catch(()=>{}); }
-    else{ document.exitFullscreen?.(); }
-  });
+  // ---------- Live data via AISStream.io (free key, user-supplied) ----------
+  function connectAIS(apiKey){
+    if(!apiKey) return;
+    let ws;
+    try{ ws = new WebSocket('wss://stream.aisstream.io/v0/stream'); }
+    catch(e){ return; }
 
-  // ---- keep screen awake ----
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        APIKey: apiKey,
+        BoundingBoxes: [[[ -5, -100 ], [ 35, -50 ]]],
+        FiltersShipMMSI: [MMSI]
+      }));
+    };
+
+    ws.onmessage = (evt) => {
+      let msg;
+      try{ msg = JSON.parse(evt.data); } catch(e){ return; }
+
+      if(msg.MessageType === 'PositionReport'){
+        const p = msg.Message.PositionReport;
+        document.getElementById('connDot').classList.add('live');
+        document.getElementById('valPosition').innerHTML =
+          toDMM(p.Latitude, true) + '<br>' + toDMM(p.Longitude, false);
+        document.getElementById('valSpeed').textContent = (p.Sog ?? 0).toFixed(1) + ' knots';
+        document.getElementById('valCourse').textContent = Math.round(p.Cog ?? 0) + '\u00b0';
+        if(map && marker){
+          const latlng = [p.Latitude, p.Longitude];
+          marker.setLatLng(latlng);
+          map.panTo(latlng, { animate:true });
+        }
+      }
+
+      if(msg.MessageType === 'ShipStaticData'){
+        const s = msg.Message.ShipStaticData;
+        if(s.Destination){
+          document.getElementById('destLabel').textContent = 'Destination: ' + s.Destination.trim();
+        }
+      }
+    };
+
+    ws.onerror = () => { document.getElementById('connDot').classList.remove('live'); };
+    ws.onclose = () => {
+      document.getElementById('connDot').classList.remove('live');
+      setTimeout(() => connectAIS(apiKey), 8000);
+    };
+  }
+
+  // ---------- Wake lock ----------
   let wakeLock = null;
   async function requestWakeLock(){
-    try{ if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); } }catch(e){}
+    try{
+      if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); }
+    }catch(e){}
   }
-  requestWakeLock();
-  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') requestWakeLock(); });
+  document.addEventListener('visibilitychange', async () => {
+    if(document.visibilityState === 'visible'){ await requestWakeLock(); }
+  });
+  function startVideoFallback(){
+    try{
+      const canvas = document.createElement('canvas');
+      canvas.width = 2; canvas.height = 2;
+      const ctx = canvas.getContext('2d');
+      if(canvas.captureStream){
+        const stream = canvas.captureStream(1);
+        setInterval(() => {
+          ctx.fillStyle = Math.random() > 0.5 ? '#0a3363' : '#0a3364';
+          ctx.fillRect(0,0,2,2);
+        }, 1000);
+        const video = document.getElementById('keepAwakeVideo');
+        video.srcObject = stream;
+        video.play().catch(()=>{});
+      }
+    }catch(e){}
+  }
+
+  // ---------- Key storage ----------
+  const savedKey = localStorage.getItem('aisstream_key') || '';
+  document.getElementById('keyInput').value = savedKey;
+  document.getElementById('saveKeyBtn').addEventListener('click', () => {
+    localStorage.setItem('aisstream_key', document.getElementById('keyInput').value.trim());
+    document.getElementById('saveKeyBtn').textContent = 'Saved ✓';
+    setTimeout(() => document.getElementById('saveKeyBtn').textContent = 'Save', 1500);
+  });
+
+  // ---------- Start flow ----------
+  document.getElementById('startBtn').addEventListener('click', async () => {
+    document.getElementById('splash').style.display = 'none';
+    document.getElementById('stage').classList.add('active');
+
+    initMap();
+    const key = localStorage.getItem('aisstream_key') || '';
+    connectAIS(key);
+
+    await requestWakeLock();
+    startVideoFallback();
+
+    try{
+      const el = document.documentElement;
+      if(el.requestFullscreen){ await el.requestFullscreen(); }
+      else if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); }
+    }catch(e){}
+  });
+
+  document.getElementById('fsBtn').addEventListener('click', () => {
+    const el = document.documentElement;
+    if(!document.fullscreenElement){
+      if(el.requestFullscreen){ el.requestFullscreen(); }
+      else if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); }
+    } else if(document.exitFullscreen){ document.exitFullscreen(); }
+  });
 </script>
 </body>
 </html>
